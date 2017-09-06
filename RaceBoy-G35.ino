@@ -1,7 +1,10 @@
 /*
- Name:		RaceBoy.ino
+ Name:		RaceBoy-G35.ino
  Created:	1/31/2016 5:23:27 PM
- Author:	jdaley
+ Updated: 9/6/2017
+ Author:	John Daley
+
+ Most block comments are due to lab testing and no canbus to watch data
  */
 
 // include the library code:
@@ -19,10 +22,6 @@
 // STUFF FOR SOFTRESET
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
-//Define Logger PIDS
-#define RUNTIME		   0x1F
-//Define CAN Retry
-#define MaxRetry			25
 //Define Button Debounce Time
 #define DEBOUNCE_MS 20
 //Define Long Press Duration
@@ -42,8 +41,8 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 #define ypin A11                  // y-axis
 #define zpin A12                  // z-axis 
 
+//Used for setting pausing without halting thread
 unsigned long previousMillis = 0;
-unsigned long previousMillis1 = 0;
 
 // initialize the OLED object
 Adafruit_CharacterOLED lcdLg(OLED_V2, 33, 32, 34, 35, 36, 37, 38);
@@ -57,7 +56,6 @@ Button butRh = Button(30, true, true, DEBOUNCE_MS);
 //Encoder Vars / Screen Scroller
 bool changeMod = false;
 int oldPosition = 0;
-int encoderVal = 0;
 int listAmount; //For Arrow Drawing code
 //Init Menu Position Vars
 int menu1Index = 0;
@@ -137,7 +135,7 @@ bool recvA = false;
 bool recvB = false;
 bool recvC = false;
 bool recvD = false;
-bool dim; // TEMP WHILE GETTING SHIT TOGETHER
+bool dim; // TEMP dimming var WHILE GETTING SHIT TOGETHER
 int tmpA;
 int tmpB;
 int knownListSize = 0;
@@ -145,7 +143,7 @@ int knownListSize = 0;
 
 
 //const char* const PROGMEM menuTable[9] = {(pgm_read_word(&(MAP))),(pgm_read_word(&(TPS))),(pgm_read_word(&(RPM))),(pgm_read_word(&(speed))),(pgm_read_word(&(IAT))),(pgm_read_word(&(ECT))),(pgm_read_word(&(advance))),(pgm_read_word(&(brake))),"Accel"};
-//Define **IN SAME ORDER AS MENU** what should be displayed on logger screen - Must be 10 char EXACTLY
+//Define **IN SAME ORDER AS MENU** what should be displayed on logger screen - Must be 10 char EXACTLY - ??? means i dont know what the value actually means, but it moves with engine
 const char* loggerTexts[10] = { "Throttle  ", "Gas Pedal ", "Brake     ", "Speed     ", "Engine RPM", "Turn Angle", "???       ", "Empty     ", "Lateral-G ", "Long-G    " };
 char loggerIndex[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 char menuModifier;
@@ -235,8 +233,8 @@ void setup() {
 		Serial.println(F("Card Ready"));
 	}
  */
- //Temp while debugging on desk
- SDready = false;
+      //Temp while debugging on desk
+     SDready = false;
      Serial.println(F("Card Failure"));
 
 
@@ -457,7 +455,7 @@ void buttonRight()
 					}
 					else if (menu1Index == 3)
 					{
-          /*
+            /* Keeping this around in case I want to bring it back
 						Serial.println(F("Erase Mils"));
 						lcdLg.clear();
 						printLcd('l', 0, 0, F("All DTC's"));
@@ -467,6 +465,7 @@ void buttonRight()
 						lcdLg.clear();
 						lcdLg.clear();
               */
+              //Do The Soft reset
               resetFunc();
 					}
 					goHome();
@@ -543,14 +542,14 @@ void printLcd(char screen, int col, int row, String message)
 		lcdLg.print(F("Some Fatal Error"));
 	}
 }
-// Returns Free Ram of Arduino
+// Returns Free Ram of Arduino - Used for debugging
 int freeRam()
 {
 	extern int __heap_start, *__brkval;
 	int v;
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
-//Updates Large LCD position
+//Updates Large LCD position based on menu modifier number
 void updateScroller()
 {
 	//Large LCD Scrolling Code to set menu modifier
@@ -821,7 +820,7 @@ void loop() {
 
 		updateLoggers();
 /*
- //SubLoop if arduino is put into offline state from logger update function above
+ //SubLoop if arduino is put into screen off state from logger update function above
 	while (isSilent)
 	{
 		
@@ -855,6 +854,7 @@ void loop() {
 	buttonDown();
 	buttonLeft();
 	buttonRight();
+  
 	//Draw the Arrows based off of elements and position of LgLcd
 	if(menuDepth == -1)//Not in menus
 		drawArrows();
@@ -1191,11 +1191,11 @@ void loop() {
 
  //clear left over open row if exists
  if (lgLcdList.size() != knownListSize)
-{
+ {
     clrRow((lgLcdList.size()));
     knownListSize = lgLcdList.size();
     
-}
+ }
 
 
 	updateScroller();
