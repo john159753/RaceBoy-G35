@@ -1,0 +1,9 @@
+[submodule "MCP_CAN_lib"]
+	path = MCP_CAN_lib
+	url = https://github.com/coryjfowler/MCP_CAN_lib.git
+[submodule "SD"]
+	path = SD
+	url = https://github.com/arduino-libraries/SD.git
+[submodule "Button"]
+	path = Button
+	url = https://github.com/JChristensen/Button.git
