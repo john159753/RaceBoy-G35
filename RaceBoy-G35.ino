@@ -27,7 +27,7 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 //Define Long Press Duration
 #define LONG_PRESS 1000
 //LCD Refresh Rate
-#define lcdInterval 10           // interval at which to refresh LCD for logger screens
+#define lcdInterval 130       // interval at which to refresh LCD for logger screens
 #define loggerInterval 1         // interval at which to refresh LCD (milliseconds)
 //Calibrations and vars for Accl
 #define zero_G_x 510.5
@@ -135,7 +135,6 @@ bool recvA = false;
 bool recvB = false;
 bool recvC = false;
 bool recvD = false;
-bool dim; // TEMP dimming var WHILE GETTING SHIT TOGETHER
 int tmpA;
 int tmpB;
 int knownListSize = 0;
@@ -173,7 +172,7 @@ byte currentPosition;
 
 void setup() {
 	Serial.begin(115200);         //Begin Serial Out
-	//CAN0.begin(CAN_500KBPS);      // Begin can bus : baudrate = 500k
+	CAN0.begin(CAN_500KBPS);      // Begin can bus : baudrate = 500k
 	pinMode(2, INPUT);            //Setting pin 2 for /INT input
 
 	// set up the LCDs number of columns and rows
@@ -193,7 +192,7 @@ void setup() {
 	lcdLg.createChar(3, logIcon);
   delay(100);
 
-  /*
+  
   CAN0.init_Mask(0, 0, 0x189C0000);
   CAN0.init_Filt(0, 0, 0x18940000);
   CAN0.init_Filt(1, 0, 0x00080000);
@@ -203,8 +202,8 @@ void setup() {
   CAN0.init_Filt(3, 0, 0x1E480000);
   CAN0.init_Filt(4, 0, 0x0B440000);
   CAN0.init_Filt(5, 0, 0x0B440000);
- */
-/*
+ 
+
 	//Setup SD Card
 	pinMode(sd_cs_pin, OUTPUT);
 
@@ -232,11 +231,8 @@ void setup() {
 		SDready = true;
 		Serial.println(F("Card Ready"));
 	}
- */
-      //Temp while debugging on desk
-     SDready = false;
-     Serial.println(F("Card Failure"));
-
+ 
+ 
 
      //Turn LCD to full Bright
      lcdLg.command(0x17);
@@ -442,15 +438,15 @@ void buttonRight()
 					{
 						//Get Mils code would be here. IF I HAD SOME
             
-						 if(!dim)
+						 if(!screenDim)
             {
             lcdLg.command(0x13);
-            dim = true;
+            screenDim = true;
             }
             else
             {
               lcdLg.command(0x17);
-            dim = false;
+            screenDim = false;
             }
 					}
 					else if (menu1Index == 3)
@@ -717,14 +713,14 @@ void clrMILS()
 //Updates Logger Variables with current CANBUS data
 void updateLoggers()
 {
-  /*
+ 
 	recvA = false;
 	recvB = false;
 	recvC = false;
 	recvD = false;
 	do {
 
-break;
+
 		if (!digitalRead(2))                         // If pin 2 is low, read receive buffer
 		{
 			if (!screenOn)
@@ -734,7 +730,7 @@ break;
 			}
 			CAN0.readMsgBuf(&len, rxBuf);              // Read data: len = data length, buf = data byte(s)
 			rxId = CAN0.getCanId();                    // Get message ID
-
+      
 			if (rxId == 0x792 && !recvA)
 			{//Brake Light and individual wheel speeds
 				BRK = ((rxBuf[2]*100)/255);
@@ -781,11 +777,33 @@ break;
 					isSilent = true;
 				}
 			}
+     if (rxId == 0x625)
+      {
+          if (rxBuf[1] == 0x0)
+          {
+             if(screenDim)
+            {
+              lcdLg.command(0x17);
+            
+              
+              screenDim = false;
+            }
+            
+          }
+          else
+            {
+              if(!screenDim)
+            {
+            
+              lcdLg.command(0x13);
+              screenDim = true;
+            }
 
-
+		    }
+		  }
 		}
 	} while (!recvA && !recvB && !recvC && !recvD);
-	*/
+	/*
 
   BRK = random(10000);
   SPD = random(10000);
@@ -795,7 +813,7 @@ break;
   PDL = random(10000);
   SAS = random(10000);
 
-
+*/
   
 	/*
 	Serial.print(TPS);
@@ -819,7 +837,7 @@ break;
 void loop() {
 
 		updateLoggers();
-/*
+
  //SubLoop if arduino is put into screen off state from logger update function above
 	while (isSilent)
 	{
@@ -844,7 +862,7 @@ void loop() {
 			}
 
 	}
-	*/
+	
 	//read buttons
 	butUp.read();
 	butDn.read();
