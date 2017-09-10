@@ -1,3 +1,4 @@
+
 /*
  Name:		RaceBoy-G35.ino
  Created:	1/31/2016 5:23:27 PM
@@ -8,6 +9,7 @@
  */
 
 // include the library code:
+#include <EEPROM.h>
 #include <Adafruit_CharacterOLED.h>
 #include <avr/pgmspace.h>
 #include <Button.h>
@@ -233,7 +235,8 @@ void setup() {
 	}
  
  
-
+     //Read from EEPROM and set vars up
+     ReadFromEEPROM();
      //Turn LCD to full Bright
      lcdLg.command(0x17);
 
@@ -779,7 +782,8 @@ void updateLoggers()
 			}
      if (rxId == 0x625)
       {
-          if (rxBuf[1] == 0x0)
+          // Reading with bit AND operator for masking the whole byte to just the three bits we care about for this rxId 
+          if ((rxBuf[1] & 0x70) == 0x0)
           {
              if(screenDim)
             {
@@ -832,9 +836,56 @@ void updateLoggers()
 	
 }
 
+//Save logger states and indexes to EEPROM
+void SaveToEEPROM()
+{
+  // Get Array Sizes for EEPROM write loops
+  int menuLoggersSize = sizeof(menu.loggers) / sizeof( bool ); 
+  int loggerIndexSize = sizeof(loggerIndex) / sizeof( char );
+  //For Each item in the T/F logger state; write to eeprom
+  for ( int i = 0; i < menuLoggersSize; i++ )
+   EEPROM.write ( i, menu.loggers[i] );
+  // Continuing the EEPROM addresses from above, write the logger index values
+  for ( int i = menuLoggersSize; i < (loggerIndexSize + menuLoggersSize); i++ )
+   EEPROM.write ( i, loggerIndex[i-menuLoggersSize] );
+}
+// Read logger states and positions from EEPROM
+void ReadFromEEPROM()
+{
+  //Not sure if i really need this, but it helps it from reading trash if nothing is loaded into eeprom (Good place to do data validation if i get around to it)
+  if ( EEPROM.read ( 0 ) != 0xff )
+  {
+    // Get Array Sizes for EEPROM write loops
+    int menuLoggersSize = sizeof(menu.loggers) / sizeof( bool );
+    int loggerIndexSize = sizeof(loggerIndex) / sizeof( char );
+    for (int i = 0; i < menuLoggersSize; i++ )
+        menu.loggers[i] = EEPROM.read ( i );
+    for ( int i = menuLoggersSize; i < (loggerIndexSize + menuLoggersSize); i++ )
+        loggerIndex[i-menuLoggersSize] = EEPROM.read ( i );
+  }
+  // Add loggers in on read.Unlike the loop add/remove logic, these already have predefined indexes and arent -1. They just needed to be added to the lcd linked list 
+  for (int i = 0; i < 10; i++)
+  {
+    //Check Menu class to see if logger is enabled for this index/loop
+    if (menu.loggers[i])
+    {
+      // If it is greater than -1; because we are reading the last state from EEPROM
+      if (loggerIndex[i] >= 0)
+      {
+        //Add the logger text to the LCDList and increase the listAmt (for arrow code)
+        lgLcdList.add(loggerIndex[i],loggerTexts[i]);
+        listAmount++;
+        
+      }
+    }
+  }
+
+}
 
 // Main Loop
 void loop() {
+
+
 
 		updateLoggers();
 
@@ -962,6 +1013,7 @@ void loop() {
 				loggerIndex[i] = (lgLcdList.size() - 1);
         //Increase the counter of how many loggers we have
 				listAmount++;
+        SaveToEEPROM();
 			}
 			//SD Loggging On and SDCard open
 			if (menu.enableLogging && SDLog)
@@ -1188,7 +1240,7 @@ void loop() {
         // WTF why are you logging GTFO
         //Revmoe the logger from the LCD list (via its index stored in loggerIndex
 				lgLcdList.remove(loggerIndex[i]);
-
+        
         //Clean up the lists index/order; we might have just taken a chunk out of the middle of it.
         //Loop through the size of the loggerindex array (probably 10, unless i made a code change and didnt change this comment)
 				for (int j = 0; j < sizeof(loggerIndex); j++)
@@ -1203,6 +1255,7 @@ void loop() {
         listAmount--;
         // Set the index to -1 AKA unused
 				loggerIndex[i] = -1;
+        SaveToEEPROM();
 			}
 		}
 	}
