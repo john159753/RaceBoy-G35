@@ -1,4 +1,3 @@
-
 /*
  Name:		RaceBoy-G35.ino
  Created:	1/31/2016 5:23:27 PM
@@ -32,12 +31,12 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 #define lcdInterval 130       // interval at which to refresh LCD for logger screens
 #define loggerInterval 1         // interval at which to refresh LCD (milliseconds)
 //Calibrations and vars for Accl
-#define zero_G_x 510.5
-#define zero_G_y 512.5
-#define zero_G_z 513.5
-#define scale_x 102.5
-#define scale_y 101.5
-#define scale_z 100.5
+#define zero_G_x 510
+#define zero_G_y 507
+#define zero_G_z 520
+#define scale_x 18
+#define scale_y 19
+#define scale_z 20 
 //Accel Pin Declare
 #define xpin A10                  // x-axis of the accelerometer
 #define ypin A11                  // y-axis
@@ -690,7 +689,36 @@ String formatString(String text, float value, byte pres)
 	}
 	else
 	{
-		output = text + F("  ") + value;
+      
+String endBuf;
+      if(numDigits((int)value) == 1)
+      {
+        if (value < 0)
+        {
+          endBuf = F(" ");
+        }
+        else
+        {
+          endBuf = F("  ");
+        }
+      }
+      //aint no way im hitting 100 g's so this works fine
+      else
+      {
+        if (value < 0)
+        {
+          endBuf = F("");
+        }
+        else
+        {
+          endBuf = F(" ");
+        }
+      }
+        value = (int)(value * 100);
+        value = (float)(value / 100);
+        output = text + F("  ") + value + endBuf;
+        
+		
 	}
 	return output;
 }
