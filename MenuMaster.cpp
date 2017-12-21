@@ -10,6 +10,7 @@ using namespace std;
 /*
  * Define Menu texts below - max size is 20
  * This is not the same as the logger screen (Defined in main file)
+ * Naming is arbitrary, but help me keep sane. TL = Top Level; S = Sub; S = SubSub
  */
 const char MenuMaster::TL1[] = { "Parameters" };
 const char MenuMaster::TL1S1[] = { "TPS" };
