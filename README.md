@@ -3,39 +3,68 @@ Arduino code that sniffs the CAN messages sent throughout a cars bus. The CAN id
 
 More to come....
 
-## Getting Started
-
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
 ### Prerequisites
 
-What things you need to install the software and how to install them
+This has been built with a MEGA. This has not been tested on an UNO.
+The MEGA's faster processor speeds are prefered due to the "heavy" logic in the main loop.
 
-```
-Give examples
-```
 
 ### Installing
 
-A step by step series of examples that tell you have to get a development env running
+Make sure you use the libraries included. 
+It should build correctly.
 
-Say what the step will be
+Look to object initializations and preprocessor macros for pin connections to screen/button/etc.
+
+
+
+## Customizing
+
+If you can work out the logic to get value loaded into a varible in the arduino, you can easily extend that to be a logger object. This is useful if wanting to change the code to use different CAN id or if you are implementing the ELM327
+
+Look at the updateLoggers() function. That contains the data for reading from canbus buffers. 
 
 ```
-Give the example
+CAN0.readMsgBuf(&len, rxBuf);              // Read data: len = data length, buf = data byte(s)
+			rxId = CAN0.getCanId();                    // Get message ID
+      
+			if (rxId == 0x792 && !recvA)
+			{//Brake Light and individual wheel speeds
+				BRK = ((rxBuf[2]*100)/255);
+				recvA = true;
+			}
 ```
 
-And repeat
+For items that dont need to be sniffed/trapped they can be specified in the main loop. Look for the two switch statements (one for sd logging on and one for just LCD display only). 
+
+Make sure to update both the LCD and Logger switch statements otherwise you might not log the data to sd care
 
 ```
-until finished
+Logger Code:
+case 0:
+					// Code for TPS
+					lgLcdList.set(loggerIndex[i], formatString(loggerTexts[i], TPS, 0));
+					SDLog.print(TPS);
+          //Logic to check if this is the last object in the loop (since the order is based off the LoggerIndex (this is the same logic in how the csv headers are generated)
+					if (loggerIndex[i] == (lgLcdList.size() - 1))
+					{
+						SDLog.println();
+					}
+					else
+					{
+						SDLog.print(",");
+					}
+					break;
+          
+Plain Ol' LCD Code:
+
+switch (i) {
+				case 0:
+					// Code for TPS
+					
+					lgLcdList.set(loggerIndex[i], formatString(loggerTexts[i], TPS, 0));
+					break;
 ```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
 
 
 ## Built With
