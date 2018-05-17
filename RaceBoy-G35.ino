@@ -26,6 +26,14 @@
 // STUFF FOR SOFTRESET
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
+//MenuMaster Defines
+#define BLOCK -1
+#define NOTUSED 0
+#define UPDOWN 1
+#define ONOFF 2
+#define CALLBACK 3
+#define LIST 4
+
 //Define Button Debounce Time
 #define DEBOUNCE_MS 20
 //Define Long Press Duration
@@ -161,6 +169,7 @@ char menuModifier;
 //OLD LIB: File SDLog;
 SdFat SD;
 SdFile SDLog;
+SdFile trackSpec;
 bool loggerRunning;
 int file = 0;
 char fileString[12];
@@ -174,8 +183,8 @@ char line[LINE_DIM];
 size_t n;
 
 //GPSVariable Definitions
-//static NMEAGPS  gps;
-//static gps_fix  fix;
+static NMEAGPS  gps;
+static gps_fix  fix;
 
 //LapTimer Variable Definitions
 int zone = 0;
@@ -300,24 +309,29 @@ void buttonUp()
     {
       menu.selectUp();
     }
+	else if (menu.getMenuType(menu1Index, menu2Index, menu3Index) == LIST) // Check if YesNo Menu
+	{
+		menu.selectUp();
+		menu.loadTracks(SD, trackSpec);
+	}
     else if (!menu.getSelectable())  // Check if YesNo Menu
     {
       switch (menuDepth) {
       case -1:
         //Code for loggerup
         newPosition--;
-      case 0:
-        if (menu1Index >= (*(menuSize + 0) - 1) || menu.getMenuType((menu1Index + 1),menu2Index,menu3Index) == -1) {} //Menu.getMenuType != -1 blocks from going to parts of menu that dont exist but memory allocated
+      case 0: 
+        if (menu1Index >= (*(menuSize + 0) - 1) || menu.getMenuType((menu1Index + 1),menu2Index,menu3Index) == BLOCK) {} //The Index +1 is a look ahead to see if menu item can be accessed
         else //Sets Limits for menu bounds
           menu1Index++;
         break;
       case 1:
-        if (menu2Index >= *(menuSize + 1) || menu.getMenuType(menu1Index,(menu2Index + 1),menu3Index) == -1) {} //Menu.getMenuType != -1 blocks from going to parts of menu that dont exist but memory allocated
+        if (menu2Index >= *(menuSize + 1) || menu.getMenuType(menu1Index,(menu2Index + 1),menu3Index) == BLOCK) {} //The Index +1 is a look ahead to see if menu item can be accessed
         else //Sets Limits for menu bounds
           menu2Index++;
         break;
       case 2:
-        if (menu3Index >= *(menuSize + 2) || menu.getMenuType(menu1Index,menu2Index,(menu3Index + 1)) == -1) {} //Menu.getMenuType != -1 blocks from going to parts of menu that dont exist but memory allocated
+        if (menu3Index >= *(menuSize + 2) || menu.getMenuType(menu1Index,menu2Index,(menu3Index + 1)) == BLOCK) {} //The Index +1 is a look ahead to see if menu item can be accessed
         else //Sets Limits for menu bounds
           menu3Index++;
         break;
@@ -351,6 +365,11 @@ void buttonDown()
     {
       menu.selectDown();
     }
+	else if(menu.getMenuType(menu1Index, menu2Index, menu3Index) == LIST) // Check if YesNo Menu
+	{
+		menu.selectDown();
+		menu.loadTracks(SD, trackSpec);
+	}
     else if (!menu.getSelectable()) // Check if YesNo Menu
     {
       switch (menuDepth) {
@@ -462,28 +481,15 @@ void buttonRight()
     }
     else if (!menu.getSelectable()) // Check if YesNo (selectable) Menu
     {
-      if (menu.getCallback())// Check if the menu calls back to a subroutine
+      if (menu.getMenuType(menu1Index, menu2Index, menu3Index) == CALLBACK)// Check if the menu calls back to a subroutine
       {
-
-
         switch (menuDepth) {
-        case -1:
-          
+        case -1:          
           break;
         case 0:
           if (menu1Index == 2)
           {
-           
-             if(!screenDim)
-            {
-            lcdLg.command(0x13);
-            screenDim = true;
-            }
-            else
-            {
-              lcdLg.command(0x17);
-            screenDim = false;
-            }
+			//This shouldnt be called as menu1index2 isnt a callback
           }
           else if (menu1Index == 3)
           {
@@ -520,33 +526,147 @@ void buttonRight()
           break;
         }
       }
-      else if (!menu.getCallback())
+      else if (menu.getMenuType(menu1Index, menu2Index, menu3Index) == LIST)
       {
-        if (menuDepth > 2) {}
-        else // limit to menu size
-          menuDepth++;
+		  switch (menuDepth) {
+		  case -1:
+			  break;
+		  case 0:
+			  break;
+		  case 1:
+			   if (menu1Index == 2)
+        {
+          if ((menu.trackSelectIndex + menu.trackReadIndex) == 0)
+          {
+            goHome();
+            break;
+          }
+          //Do the List Logic
+          byte k = 0;
+          if (!SD.chdir("Tracks")) {
+            //error("chdir failed for track traps folder.\n");
+          }
 
-        switch (menuDepth) {
-        case -1:
-          break;
-        case 0:
-          menu1Index = 0;
-          //code
-          break;
-        case 1:
-          menu2Index = 1;
-          break;
-        case 2:
-          menu3Index = 1;
-          break;
-        case 3:
-          //code
-          break;
-        default:
-          //code
-          break;
+          Serial.print("Selecting: ");
+          Serial.println((menu.trackSelectIndex + menu.trackReadIndex));
+          while (trackSpec.openNext(SD.vwd(), O_READ)) {
+            k++;
+            if (k == (menu.trackSelectIndex + menu.trackReadIndex))
+            {
+              Serial.print("Selected Track: ");
+              trackSpec.printName(&Serial);
+
+              Serial.println();
+
+              break;
+            }
+            trackSpec.close();
+          }
+          SD.chdir("/");
+          SD.vwd()->rewind();
+
+          menuDepth--;
+          menu2Index = 0;
+          
         }
+			  else if (menu1Index == 3)
+			  {
+				 //Wont be called
+				  goHome();
+			  }
+			  else
+			  {
+				  goHome();
+			  }
+			  
+			  //code
+			  break;
+		  case 2:
+			  if (menu1Index == 2)
+			  {
+				  
+				  goHome();
+				  
+			  }
+			  else if (menu1Index == 3)
+			  {
+				  //Wont be called
+				  goHome();
+			  }
+			  else
+			  {
+				  goHome();
+			  }
+			  break;
+		  case 3:
+			  goHome();
+			  //code
+			  break;
+		  
+		  default:
+			  goHome();
+			  //code
+			  break;
+		  }
       }
+	  else
+	  {
+		  if (menuDepth > 2) {}
+		  else // limit to menu size
+			  menuDepth++; //Progress to next menu depth
+
+		  switch (menuDepth) {
+		  case -1:
+			  break;
+		  case 0:
+			  menu1Index = 0;
+			  //code
+			  break;
+		  case 1:
+			  menu2Index = 1;
+
+
+          //Testing
+if (menu1Index == 2)
+        {
+          trackSpec.close();
+            //Do the List Logic
+          byte k = 0;
+          if (!SD.chdir("Tracks")) {
+            Serial.println(F("chdir failed for track traps folder."));
+          }
+
+          while (trackSpec.openNext(SD.vwd(), O_READ)) {
+            k++;
+            Serial.print(k, DEC);
+            Serial.print(". ");
+            trackSpec.printName(&Serial);
+
+            Serial.println();
+            trackSpec.close();
+          }
+          SD.chdir("/");
+          SD.vwd()->rewind();
+          
+          menu.trackCount = k;
+          menu.trackSelectIndex = 0;
+          menu.trackReadIndex = 0;
+          menu.loadTracks(SD, trackSpec);
+          //menuDepth++;
+        }
+       
+			  break;
+		  case 2:
+			  menu3Index = 1;
+			  break;
+		  case 3:
+			  //code
+			  break;
+		  default:
+			  //code
+			  break;
+		  }
+	  }
     }
   }
 
@@ -1343,8 +1463,17 @@ void loop() {
 
   if (menuDepth != -1)
   {
-    printLcd('l', (((20 / 2) - ((menu.getTopText().length()) / 2))), 0, menu.getTopText());
-    printLcd('l', 0, 1, menu.getBottomText());
+	  if(menu.getMenuType(menu1Index, menu2Index, menu3Index) == LIST)
+	  { 
+		  printLcd('l', 0, 0, menu.getTopText());
+		  printLcd('l', 0, 1, menu.getBottomText());
+		  printLcd('l', 0, 2, menu.getLine3Text());
+		  printLcd('l', 0, 3, menu.getLine4Text());
+	  }
+	  else {
+		  printLcd('l', (((20 / 2) - ((menu.getTopText().length()) / 2))), 0, menu.getTopText());
+		  printLcd('l', 0, 1, menu.getBottomText());
+	  }
   }
 
   else

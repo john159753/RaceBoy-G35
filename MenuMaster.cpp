@@ -1,10 +1,14 @@
 #include "MenuMaster.h"
 #include <WString.h>
+#include <SdFat.h>
 //#include <avr/pgmspace.h>
 
+#define BLOCK -1
+#define NOTUSED 0
 #define UPDOWN 1
 #define ONOFF 2
 #define CALLBACK 3
+#define LIST 4
 
 using namespace std;
 /*
@@ -26,7 +30,7 @@ const char MenuMaster::TL1S9[] = { "G-Force Lat" };
 const char MenuMaster::TL1S10[] = { "G-Force Long" };
 const char MenuMaster::TL2[] = { "Data Logger" };
 const char MenuMaster::TL2S1[] = { "Start/Stop" };
-const char MenuMaster::TL3[] = { "??? Mystery Item! ??" };
+const char MenuMaster::TL3[] = { "Track Select" };
 const char MenuMaster::TL4[] = { "Soft Reset" };
 /* Below is the Text Array for the menu structure
  * This is confusing AS ALL HELL, but once you get it, you get it.
@@ -128,6 +132,17 @@ String MenuMaster::getTopText()
 		strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuTable[calcIndex(m1, m2, m3)]))); // Necessary casts and dereferencing,
 		top = buffer;
 	}
+	else if (menuType[m1][m2][m3] == LIST)
+	{
+		if (trackReadIndex == 0)
+		{
+			top = String("> ") + trackNames[0];
+		}
+		else
+		{
+			top = trackNames[0];
+		}
+	}
 	return top;
 }
 //Returns Bottom Text of smallLCD based off menu indexes
@@ -166,8 +181,54 @@ String MenuMaster::getBottomText()
 			bottom = "    Yes  [No]";
 
 	}
+	else if (menuType[m1][m2][m3] == LIST)
+	{
+		if (trackReadIndex == 1)
+		{
+			bottom = String("> ") + trackNames[1];
+		}
+		else
+		{
+			bottom = trackNames[1];
+		}
+	}
 
 	return bottom;
+}
+//Returns Top Text of smallLCD based off menu indexes
+String MenuMaster::getLine3Text()
+{
+	String line;
+	if (menuType[m1][m2][m3] == LIST)
+	{
+		if (trackReadIndex == 2)
+		{
+			line = String("> ") + trackNames[2];
+		}
+		else
+		{
+			line = trackNames[2];
+		}
+	}
+	return line;
+}
+//Returns Bottom Text of smallLCD based off menu indexes
+String MenuMaster::getLine4Text()
+{
+	String line;
+	if (menuType[m1][m2][m3] == LIST)
+	{
+		if (trackReadIndex == 3)
+		{
+			line = String("> ") + trackNames[3];
+		}
+		else 
+		{
+			line = trackNames[3];
+		}
+		
+	}
+	return line;
 }
 //Returns Bool if yesno menu
 bool MenuMaster::getSelectable()
@@ -179,48 +240,79 @@ bool MenuMaster::getCallback()
 {
 	return callBack;
 }
-//Return Menu Type for a specified menu - used for menu blocking commands currently
+//Return Menu Type for a specified menu - 
 short MenuMaster::getMenuType(short index1, short index2, short index3)
 {
   return menuType[index1][index2][index3];
 }
 //Select up in menu lists
-void MenuMaster::selectUp()
+int MenuMaster::selectUp()
 {
-	if (m1 == 0) {
-		if (!locked)
-		{
-      //This part sets a logger object (aligned with the menu text and text in master *hopefully*) to either true or false
-			if (loggerSelected)
-				loggers[m2 - 1] = false;
-			else
-				loggers[m2 - 1] = true;
-		}
-	}
-	else if (m1 == 1) {
-		if (loggerSelected)
-			enableLogging = false;
+	if (menuType[m1][m2][m3] == LIST)
+	{
+		if (trackReadIndex != 0)
+			trackReadIndex--;
 		else
-			enableLogging = true;
+		{
+			//trackReadIndex = 0;
+			if(trackSelectIndex != 0)
+				trackSelectIndex--;
+			return (trackSelectIndex);
+		}
+
+	}
+	else {
+		if (m1 == 0) {
+			if (!locked)
+			{
+				//This part sets a logger object (aligned with the menu text and text in master *hopefully*) to either true or false
+				if (loggerSelected)
+					loggers[m2 - 1] = false;
+				else
+					loggers[m2 - 1] = true;
+			}
+		}
+		else if (m1 == 1) {
+			if (loggerSelected)
+				enableLogging = false;
+			else
+				enableLogging = true;
+		}
+		return 0;
 	}
 }
 //Select down in menu lists
-void MenuMaster::selectDown()
+int MenuMaster::selectDown()
 {
-	if (m1 == 0) {
-		if (!locked)
+	if (menuType[m1][m2][m3] == LIST)
+	{
+		if (trackReadIndex != 3)
+			trackReadIndex ++;
+		else
 		{
-			if (loggerSelected)
-				loggers[m2 - 1] = false;
-			else
-				loggers[m2 - 1] = true;
+			//trackReadIndex = 3;
+			if ((trackSelectIndex+3) != trackCount)
+				trackSelectIndex++;
+			return (trackSelectIndex);
 		}
 	}
-	else if (m1 == 1) {
-		if (loggerSelected)
-			enableLogging = false;
-		else
-			enableLogging = true;
+	else {
+		if (m1 == 0) {
+			if (!locked)
+			{
+				if (loggerSelected)
+					loggers[m2 - 1] = false;
+				else
+					loggers[m2 - 1] = true;
+			}
+		}
+		else if (m1 == 1) {
+			if (loggerSelected)
+				enableLogging = false;
+			else
+				enableLogging = true;
+		}
+		return 0;
 	}
 }
 //Sets all loggers on
@@ -240,4 +332,43 @@ void MenuMaster::lockLoggers()
 void MenuMaster::unlockLoggers()
 {
 	locked = false;
+}
+
+void MenuMaster::loadTracks(SdFat &sd, SdFile &file)
+{
+	if (!sd.chdir("Tracks")) {
+		//error("chdir failed for track traps folder.\n");
+	}
+	byte maxTracks = trackCount;
+	if (trackCount >= 4)
+	{ 
+		maxTracks = 4;
+	}
+	//char fname[20];
+	if (trackSelectIndex == 0)
+	{
+		strcpy(trackNames[0], "None");		
+		for (byte i = 1; i < maxTracks; i++)
+		{
+			file.openNext(sd.vwd(), O_READ);
+			file.getName(trackNames[i], 20);
+			file.close();
+		}
+	}
+	else
+	{
+		for (byte i = (trackSelectIndex-1); i != 0; i--)
+		{
+			file.openNext(sd.vwd(), O_READ);
+			file.close();
+		}
+		for (byte i = 0; i < maxTracks; i++)
+		{
+			file.openNext(sd.vwd(), O_READ);
+			file.getName(trackNames[i], 20);
+			file.close();
+		}
+	}
+	sd.vwd()->rewind();
+	sd.chdir("/");
 }

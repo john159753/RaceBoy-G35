@@ -2,12 +2,14 @@
 #define MENUMASTER_H
 #include <avr/pgmspace.h>
 #include <Wstring.H>
+#include <SdFat.h>
 
 #define BLOCK -1
 #define NOTUSED 0
 #define UPDOWN 1
 #define ONOFF 2
 #define CALLBACK 3
+#define LIST 4
 
 class MenuMaster
 {
@@ -45,7 +47,7 @@ private:
 	const char menuType[4][11][2] = {
 		{ { UPDOWN, NOTUSED }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF } },
 		{ { UPDOWN, NOTUSED }, { UPDOWN, ONOFF }, { BLOCK, NOTUSED } },
-		{ { CALLBACK, NOTUSED } },
+		{ { UPDOWN, NOTUSED }, { LIST, LIST }, { BLOCK, NOTUSED } },
 		{ { CALLBACK, NOTUSED } }
 	};
   //Buffer to copy menuitems from progmem to dynamic memory
@@ -62,28 +64,37 @@ private:
 	const static short dim1Size = 4; // TL is 4 deep
 	const static short dim2Size = 11; // Sub is 10 deep (remeber - have to include the top levels)
 	const static short dim3Size = 2; // Choice menu is flat
+	//Track Selection Strings
+	char trackNames[4][20];
+
 
 public:
 	// Data Members
 	bool enableLogging;
 	bool loggers[(dim2Size - 1)];
-	void setLoggersTrue(); //Not sure why this is in datamemebers but dont want to move it
 	bool selectable;
 	bool callBack;
 	// Constructors
 	MenuMaster(int depth, int index1, int index2, int index3);
 
 	// Methods
+	void setLoggersTrue();
 	void setValues(int depth, int index1, int index2, int index3);
 	int* getMenuSize();
 	String getTopText();
 	String getBottomText();
+	String getLine3Text();
+	String getLine4Text();
 	bool getSelectable();
 	bool getCallback();
-  short getMenuType(short index1, short index2, short index3);
-	void selectUp();
-	void selectDown();
+	short getMenuType(short index1, short index2, short index3);
+	int selectUp();
+	int selectDown();
 	void lockLoggers();
 	void unlockLoggers();
+	void loadTracks(SdFat &sd, SdFile &file);
+	byte trackCount;
+	byte trackSelectIndex = 0;
+	byte trackReadIndex = 0;
 };
 #endif
