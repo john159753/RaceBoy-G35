@@ -6,7 +6,7 @@ More to come....
 ### Prerequisites
 
 This has been built with a MEGA. This has not been tested on an UNO.
-The MEGA's faster processor speeds are prefered due to the "heavy" logic in the main loop.
+The MEGA's faster processor speeds are prefered due to the heavy "poor constructed" logic in the main loop.
 
 
 ### Installing
