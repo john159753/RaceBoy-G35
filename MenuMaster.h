@@ -31,7 +31,7 @@ private:
 	static const char PROGMEM TL2S1[];
 	static const char PROGMEM TL3[];
 	static const char PROGMEM TL4[];
-	static const char* const PROGMEM menuTable[88];
+	static const char *const PROGMEM menuTable[88];
 	/*
 	 * This is confusing, but hear me out.
 	 * 1st dimension (x4) is how many top menus exist
@@ -45,12 +45,11 @@ private:
 	 * BLOCK - Used to block access to further (non-existent) elements of the array
 	 */
 	const char menuType[4][11][2] = {
-		{ { UPDOWN, NOTUSED }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF }, { UPDOWN, ONOFF } },
-		{ { UPDOWN, NOTUSED }, { UPDOWN, ONOFF }, { BLOCK, NOTUSED } },
-		{ { UPDOWN, NOTUSED }, { LIST, LIST }, { BLOCK, NOTUSED } },
-		{ { CALLBACK, NOTUSED } }
-	};
-	//Buffer to copy menuitems from progmem to dynamic memory
+		{{UPDOWN, NOTUSED}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}, {UPDOWN, ONOFF}},
+		{{UPDOWN, NOTUSED}, {UPDOWN, ONOFF}, {BLOCK, NOTUSED}},
+		{{UPDOWN, NOTUSED}, {LIST, LIST}, {BLOCK, NOTUSED}},
+		{{CALLBACK, NOTUSED}}};
+	// Buffer to copy menuitems from progmem to dynamic memory
 	char buffer[20];
 	short menuModifier = 0;
 	short mD;
@@ -60,13 +59,12 @@ private:
 	short calculateIndex(short index1, short index2, short index3);
 	bool loggerSelected;
 	bool locked;
-	//Define menu sizes manually since the menu text array had been collapsed to work with progmem
-	const static short dim1Size = 4; // TL is 4 deep
+	// Define menu sizes manually since the menu text array had been collapsed to work with progmem
+	const static short dim1Size = 4;  // TL is 4 deep
 	const static short dim2Size = 11; // Sub is 10 deep (remeber - have to include the top levels)
-	const static short dim3Size = 2; // Choice menu is flat
-	//Track Selection Strings
+	const static short dim3Size = 2;  // Choice menu is flat
+	// Track Selection Strings
 	char trackNames[4][20];
-
 
 public:
 	// Data Members
@@ -83,7 +81,7 @@ public:
 	// Methods
 	void SetLoggersTrue();
 	void SetValues(int depth, int index1, int index2, int index3);
-	int* GetMenuSize();
+	int *GetMenuSize();
 	String GetLine1Text();
 	String GetLine2Text();
 	String GetLine3Text();
@@ -95,7 +93,6 @@ public:
 	int SelectDown();
 	void LockLoggers();
 	void UnlockLoggers();
-	void LoadTracks(SdFat &sd, SdFile &file);
-
+	void LoadTracks(SdFat &sd, File &tracksDir, File &file);
 };
 #endif
