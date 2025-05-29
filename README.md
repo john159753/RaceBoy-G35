@@ -59,7 +59,8 @@ This is the core telemetry unit. The complete racing system consists of:
 ## Track Setup
 
 ### Using GPSTrapCreator (Recommended)
-https://github.com/john159753/GPSTrapCreator
+[https://github.com/john159753/GPSTrapCreator](https://github.com/john159753/GPSTrapCreator)
+
 Use the GPSTrapCreator to visually create track zones by clicking waypoints on a map. This generates the properly formatted CSV files automatically.
 
 ### Manual Track File Format
@@ -146,9 +147,9 @@ case 0xXXX: // Your CAN ID
 
 ## Related Projects
 
-- **TireTempProxy**: Dedicated Arduino system for tire temperature sensor management
-- **Racing Dashboard**: Raspberry Pi-based real-time telemetry dashboard
-- **GPSTrapCreator**: Desktop application for creating GPS-based track zone layouts
+- [**TireTempProxy**](https://github.com/john159753/RaceboyDashboard): Dedicated Arduino system for tire temperature sensor management
+- [**Racing Dashboard**](https://github.com/john159753/Raceboy-TTProxy): Raspberry Pi-based real-time telemetry dashboard
+- [**GPSTrapCreator**](https://github.com/john159753/GPSTrapCreator/tree/master): Desktop application for creating GPS-based track zone layouts
 
 ## Authors
 
